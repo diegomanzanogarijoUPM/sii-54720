@@ -10,6 +10,9 @@
 #include <string.h>
 #include <math.h>
 
+#include <fcntl.h>	// para usar open()
+#include <unistd.h>	// para usar close() y write()
+
 //////////////////////////////////////////////////////////////////////
 // Construction/Destruction
 //////////////////////////////////////////////////////////////////////
@@ -21,7 +24,7 @@ CMundo::CMundo()
 
 CMundo::~CMundo()
 {
-
+	close(fd);
 }
 
 void CMundo::InitGL()
@@ -135,6 +138,12 @@ void CMundo::OnTimer(int value)
 		esfera.velocidad.x=2+2*rand()/(float)RAND_MAX;
 		esfera.velocidad.y=2+2*rand()/(float)RAND_MAX;
 		puntos2++;
+		
+		char mensaje[100];
+		sprintf(mensaje, 
+			"Jugador 2 marca 1 punto, lleva un total de %d puntos.\n",
+			puntos2);
+		write(fd, mensaje, strlen(mensaje));
 	}
 
 	if(fondo_dcho.Rebota(esfera))
@@ -144,6 +153,18 @@ void CMundo::OnTimer(int value)
 		esfera.velocidad.x=-2-2*rand()/(float)RAND_MAX;
 		esfera.velocidad.y=-2-2*rand()/(float)RAND_MAX;
 		puntos1++;
+		
+		char mensaje[100];
+		sprintf(mensaje, 
+			"Jugador 1 marca 1 punto, lleva un total de %d puntos.\n",
+			puntos1);
+		write(fd, mensaje, strlen(mensaje));
+	}
+	
+	// final del juego al llegar a 3 puntos cualquier jugador
+	if (puntos1 >= 3 || puntos2 >= 3)
+	{
+		exit(0);
 	}
 
 }
@@ -164,6 +185,14 @@ void CMundo::OnKeyboardDown(unsigned char key, int x, int y)
 
 void CMundo::Init()
 {
+//apertura de la fifo
+	fd = open("/tmp/fifo_tenis", O_WRONLY);
+	if (fd < 0)
+	{
+		perror("No puede abrirse el FIFO");
+	}
+		
+	
 	Plano p;
 //pared inferior
 	p.x1=-7;p.y1=-5;
